@@ -1,0 +1,7 @@
+{
+  "SERVER_WS": "ws://localhost:8080",
+  "INTERVAL": 5,
+  "CLIENT_NAME": "Casa do João",
+  "ASK_FIRST_TIME": true,
+  "JPEG_QUALITY": 60
+}
