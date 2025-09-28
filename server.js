@@ -9,9 +9,10 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const clients = new Map();
 
+// servir ficheiros estáticos (tecnico.html, css, js, etc)
 app.use(express.static(path.join(__dirname, 'public')));
 
 wss.on('connection', (ws) => {
@@ -67,12 +68,18 @@ wss.on('connection', (ws) => {
 });
 
 function updateTechs() {
-  const list = Array.from(clients.entries()).map(([id, ws]) => ({ clientId: id, name: ws.clientName }));
+  const list = Array.from(clients.entries()).map(([id, ws]) => ({
+    clientId: id,
+    name: ws.clientName
+  }));
   broadcastToTechs(JSON.stringify({ type: 'client_list', clients: list }));
 }
 
 function updateSingleTech(ws) {
-  const list = Array.from(clients.entries()).map(([id, ws]) => ({ clientId: id, name: ws.clientName }));
+  const list = Array.from(clients.entries()).map(([id, ws]) => ({
+    clientId: id,
+    name: ws.clientName
+  }));
   ws.send(JSON.stringify({ type: 'client_list', clients: list }));
 }
 
