@@ -1,11 +1,14 @@
 <!doctype html>
 <html lang="pt">
-<head><meta charset="utf-8"><title>Técnico</title></head>
+<head>
+  <meta charset="utf-8">
+  <title>Técnico</title>
+</head>
 <body>
   <h1>Assistência Remota — Técnico</h1>
 
-  <p>Link de download do APK (envia ao cliente):</p>
-  <p><a href="/downloads/client.apk" download>Descarregar client.apk</a></p>
+  <p>Link de download do cliente:</p>
+  <p><a href="/downloads/client.exe" download>Descarregar cliente</a></p>
 
   <h3>Clientes online</h3>
   <div id="clients">A carregar...</div>
@@ -14,7 +17,7 @@
   <div id="images"></div>
 
 <script>
-  const ws = new WebSocket(`ws://${location.hostname}/ws`);
+  const ws = new WebSocket(`wss://${location.host}/ws`);
   const clientsDiv = document.getElementById('clients');
   const imagesDiv = document.getElementById('images');
 
@@ -23,7 +26,10 @@
   ws.onmessage = (ev) => {
     let msg = JSON.parse(ev.data);
     if (msg.type === 'client_list') {
-      clientsDiv.innerHTML = msg.clients.map(c => `<div>${c.name} (${c.clientId}) <button onclick="req(${JSON.stringify(c.clientId)})">Pedir captura</button></div>`).join('');
+      clientsDiv.innerHTML = msg.clients.map(c => 
+        `<div>${c.name} (${c.clientId}) 
+          <button onclick="req('${c.clientId}')">Pedir captura</button>
+        </div>`).join('');
     }
     if (msg.type === 'screenshot') {
       const img = document.createElement('img');
