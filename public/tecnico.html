@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt">
+<head><meta charset="utf-8"><title>Técnico</title></head>
+<body>
+  <h1>Assistência Remota — Técnico</h1>
+
+  <p>Link de download do APK (envia ao cliente):</p>
+  <p><a href="/downloads/client.apk" download>Descarregar client.apk</a></p>
+
+  <h3>Clientes online</h3>
+  <div id="clients">A carregar...</div>
+
+  <h3>Últimas imagens</h3>
+  <div id="images"></div>
+
+<script>
+  const ws = new WebSocket(`ws://${location.hostname}/ws`);
+  const clientsDiv = document.getElementById('clients');
+  const imagesDiv = document.getElementById('images');
+
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'register_tech' }));
+
+  ws.onmessage = (ev) => {
+    let msg = JSON.parse(ev.data);
+    if (msg.type === 'client_list') {
+      clientsDiv.innerHTML = msg.clients.map(c => `<div>${c.name} (${c.clientId}) <button onclick="req(${JSON.stringify(c.clientId)})">Pedir captura</button></div>`).join('');
+    }
+    if (msg.type === 'screenshot') {
+      const img = document.createElement('img');
+      img.src = 'data:image/jpeg;base64,' + msg.image;
+      img.style.maxWidth = '600px';
+      imagesDiv.prepend(img);
+    }
+  };
+
+  function req(clientId) {
+    ws.send(JSON.stringify({ type:'command', target: clientId, cmd: 'captura_tela' }));
+  }
+</script>
+</body>
+</html>
