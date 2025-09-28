@@ -7,13 +7,41 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
 const PORT = process.env.PORT || 8080;
-const clients = new Map();
 
-// servir ficheiros estáticos (tecnico.html, css, js, etc)
+const clients = new Map(); // armazenar clientes conectados
+
+// Serve arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
+
+// WebSocket
+const wss = new WebSocket.Server({ noServer: true });
+
+// Upgrade para /ws
+server.on('upgrade', (req, socket, head) => {
+  if (req.url === '/ws') {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+// Função para atualizar lista de clientes para técnicos
+function updateTechs() {
+  const list = Array.from(clients.entries()).map(([id, ws]) => ({
+    clientId: id,
+    name: ws.clientName
+  }));
+  broadcastToTechs(JSON.stringify({ type: 'client_list', clients: list }));
+}
+
+function broadcastToTechs(payload) {
+  wss.clients.forEach((c) => {
+    if (c.isTech && c.readyState === WebSocket.OPEN) c.send(payload);
+  });
+}
 
 wss.on('connection', (ws) => {
   ws.isAlive = true;
@@ -36,7 +64,7 @@ wss.on('connection', (ws) => {
     if (msg.type === 'register_tech') {
       ws.isTech = true;
       ws.send(JSON.stringify({ type: 'ack', msg: 'Técnico autenticado' }));
-      updateSingleTech(ws);
+      updateTechs();
       return;
     }
 
@@ -67,28 +95,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-function updateTechs() {
-  const list = Array.from(clients.entries()).map(([id, ws]) => ({
-    clientId: id,
-    name: ws.clientName
-  }));
-  broadcastToTechs(JSON.stringify({ type: 'client_list', clients: list }));
-}
-
-function updateSingleTech(ws) {
-  const list = Array.from(clients.entries()).map(([id, ws]) => ({
-    clientId: id,
-    name: ws.clientName
-  }));
-  ws.send(JSON.stringify({ type: 'client_list', clients: list }));
-}
-
-function broadcastToTechs(payload) {
-  wss.clients.forEach((c) => {
-    if (c.isTech && c.readyState === WebSocket.OPEN) c.send(payload);
-  });
-}
-
 // Heartbeat
 setInterval(() => {
   wss.clients.forEach((ws) => {
@@ -99,6 +105,5 @@ setInterval(() => {
 }, 30000);
 
 server.listen(PORT, () => {
-  console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log(`WebSocket ativo em ws://localhost:${PORT}`);
+  console.log(`Servidor HTTP/WebSocket a correr em http://localhost:${PORT}`);
 });
